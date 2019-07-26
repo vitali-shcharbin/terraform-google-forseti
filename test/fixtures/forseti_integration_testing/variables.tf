@@ -48,4 +48,5 @@ variable "billing_account" {
 variable "folder_id" {
   description = "Folder id."
   type = "string"
+  default = ""
 }

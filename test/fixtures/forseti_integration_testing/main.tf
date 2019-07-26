@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+provider "google-beta" {
+  version     = "~> 2.10"
+}
+
 provider "tls" {
   version = "~> 1.2"
 }
@@ -99,55 +103,7 @@ module "integration-test-project-1" {
 
   billing_account = "${var.billing_account}"
   name = "integration-1"
-  org_id = "${org_id}"
-  activate_apis = []
-  folder_id = "${var.folder_id}"
-  random_project_id = true
-}
-
-module "integration-test-project-2" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 2.0"
-
-  billing_account = "${var.billing_account}"
-  name = "integration-2"
-  org_id = "${org_id}"
-  activate_apis = []
-  folder_id = "${var.folder_id}"
-  random_project_id = true
-}
-
-module "integration-test-project-3" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 2.0"
-
-  billing_account = "${var.billing_account}"
-  name = "integration-3"
-  org_id = "${org_id}"
-  activate_apis = []
-  folder_id = "${var.folder_id}"
-  random_project_id = true
-}
-
-module "integration-test-project-4" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 2.0"
-
-  billing_account = "${var.billing_account}"
-  name = "integration-4"
-  org_id = "${org_id}"
-  activate_apis = []
-  folder_id = "${var.folder_id}"
-  random_project_id = true
-}
-
-module "integration-test-project-5" {
-  source  = "terraform-google-modules/project-factory/google"
-  version = "~> 2.0"
-
-  billing_account = "${var.billing_account}"
-  name = "integration-5"
-  org_id = "${org_id}"
+  org_id = "${var.org_id}"
   activate_apis = []
   folder_id = "${var.folder_id}"
   random_project_id = true
