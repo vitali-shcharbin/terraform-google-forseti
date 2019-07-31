@@ -14,7 +14,23 @@ control 'inventory' do
         after do 
             command("forseti inventory purge 0").result
         end     
-    end    
+    end 
+    
+    describe "Inventory create command is automated" do
+        subject do 
+            command("mysql -u root --host 127.0.0.1 --database forseti_security --execute \"select count(DISTINCT resource_id) from gcp_inventory where category='resource' and resource_type = 'project';\"")
+        end
+        before do 
+            command("forseti inventory create").result
+            command("sudo apt-get -y install mysql-client").result
+        end
+        its("exit_status") { should eq 0 }
+        its("stdout") { should match "2" }
+        its("stderr") { should eq ""}
+        after do
+            command("forseti inventory purge 0").result
+        end  
+    end
 
     describe "Inventory purge command is automated" do
         subject do 
@@ -114,28 +130,6 @@ control 'inventory' do
         end
     end
 
-    describe "Model delete command is automated" do
-        subject do 
-            command("forseti model delete model_new")
-        end
-        before do 
-            command("forseti model create --inventory_index_id #{inventory_id} model_new").result
-        end
-
-        let :inventory_id do
-            command("forseti inventory create").result
-            JSON.parse(command("forseti inventory list").stdout).fetch("id")
-        end
-
-        its("exit_status") { should eq 0 }
-        its("stdout") { should match /SUCCESS/ }
-        its("stderr") { should eq ""}
-        
-        after do 
-            command("forseti inventory purge 0").result
-        end
-    end
-
     describe "Model list command is automated" do
         subject do 
             command("forseti model list")
@@ -159,35 +153,25 @@ control 'inventory' do
         end
     end
 
-    describe "Scanner run command is automated" do
+    describe "Model delete command is automated" do
         subject do 
-            command("forseti scanner run")
+            command("forseti model delete model_new")
+        end
+        before do 
+            command("forseti model create --inventory_index_id #{inventory_id} model_new").result
+        end
+
+        let :inventory_id do
+            command("forseti inventory create").result
+            JSON.parse(command("forseti inventory list").stdout).fetch("id")
+        end
+
         its("exit_status") { should eq 0 }
-        its("stdout") { should match "" }
+        its("stdout") { should match /SUCCESS/ }
         its("stderr") { should eq ""}
+        
+        after do 
+            command("forseti inventory purge 0").result
+        end
     end
-
-    describe "Notifier run command is automated" do
-        subject do 
-            command("forseti notifier run")
-        its("exit_status") { should eq 0 }
-        its("stdout") { should match "" }
-        its("stderr") { should eq ""}  
-    end
-
-
-    # describe "Ensure CAI exportes are stored in bucket" do
-    #     subject do 
-    #         command("gsutil ls -r gs://#{attribute("forseti-cai-storage-bucket")}/**")
-    #     end
-    #     before do 
-    #         command("forseti inventory create").result
-    #     end
-    #     its("stdout") { should match /organization/ }
-    #     its("stderr") { should eq ""}
-    #     after do 
-    #         command("forseti inventory purge 0").result
-    #     end
-    # end
-
 end
