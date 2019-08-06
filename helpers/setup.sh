@@ -15,7 +15,7 @@
 
 show_help() {
   cat <<EOF
-Usage: ${0##*/} -p PROJECT_ID -o ORG_ID [-e] [-f HOST_PROJECT]
+Usage: ${0##*/} -p PROJECT_ID [-e] [-f HOST_PROJECT]
        ${0##*/} -h
 
 Generate a service account with the IAM roles needed to run the Forseti Terraform module.
@@ -23,7 +23,6 @@ Generate a service account with the IAM roles needed to run the Forseti Terrafor
 Options:
 
     -p PROJECT_ID    The project ID where Forseti resources will be created.
-    -o ORG_ID        The organization ID that Forseti will be monitoring.
     -e               Add additional IAM roles for running the real time policy enforcer.
     -f HOST_PROJECT_ID  ID of a project holding shared vpc.
 
@@ -36,7 +35,6 @@ EOF
 }
 
 PROJECT_ID=""
-ORG_ID=""
 WITH_ENFORCER=""
 HOST_PROJECT_ID=""
 
@@ -56,9 +54,6 @@ while getopts ":hep:f:o:" opt; do
     f)
       HOST_PROJECT_ID="$OPTARG"
       ;;
-    o)
-      ORG_ID="$OPTARG"
-      ;;
     *)
       echo "Unhandled option: -$opt" >&2
       show_help >&2
@@ -73,21 +68,9 @@ if [[ -z "$PROJECT_ID" ]]; then
   exit 1
 fi
 
-if [[ -z "$ORG_ID" ]]; then
-  echo "ERROR: ORG_ID must be set."
-  show_help >&2
-  exit 1
-fi
-
 # Ensure that we can fetch the IAM policy on the Forseti project.
 if ! gcloud projects get-iam-policy "$PROJECT_ID" 2>&- 1>&-; then
   echo "ERROR: Unable to fetch IAM policy on project $PROJECT_ID."
-  exit 1
-fi
-
-# Ensure that we can fetch the IAM policy on the GCP organization.
-if ! gcloud organizations get-iam-policy "$ORG_ID" 2>&- 1>&-; then
-  echo "ERROR: Unable to fetch IAM policy on organization $ORG_ID."
   exit 1
 fi
 
@@ -110,18 +93,6 @@ echo "Downloading key to credentials.json..."
 
 gcloud iam service-accounts keys create "${KEY_FILE}" \
     --iam-account "${SERVICE_ACCOUNT_EMAIL}" \
-    --user-output-enabled false
-
-echo "Applying permissions for org $ORG_ID and project $PROJECT_ID..."
-
-gcloud organizations add-iam-policy-binding "${ORG_ID}" \
-    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
-    --role="roles/resourcemanager.organizationAdmin" \
-    --user-output-enabled false
-
-gcloud organizations add-iam-policy-binding "${ORG_ID}" \
-    --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
-    --role="roles/iam.securityReviewer" \
     --user-output-enabled false
 
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
@@ -165,16 +136,7 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
     --user-output-enabled false
 
 if [[ -n "$WITH_ENFORCER" ]]; then
-  org_roles=("roles/logging.configWriter" "roles/iam.organizationRoleAdmin")
   project_roles=("roles/pubsub.admin")
-
-  echo "Granting real time policy enforcer roles on organization $ORG_ID..."
-  for org_role in "${org_roles[@]}"; do
-    gcloud organizations add-iam-policy-binding "${ORG_ID}" \
-        --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
-        --role="$org_role" \
-        --user-output-enabled false
-  done
 
   echo "Granting real time policy enforcer roles on project $PROJECT_ID..."
   for project_role in "${project_roles[@]}"; do
